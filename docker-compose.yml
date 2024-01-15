@@ -1,0 +1,13 @@
+version: "3"
+
+services:
+  pi_planter:
+    container_name: pi_planter
+    image: pi_planter
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    devices:
+      - /dev/i2c-1
+      - /dev/i2c-20
+      - /dev/i2c-21
+    restart: unless-stopped

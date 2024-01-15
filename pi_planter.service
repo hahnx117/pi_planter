@@ -1,0 +1,12 @@
+[Unit]
+Description=Pi Planter
+
+[Service]
+User=david
+WorkingDirectory=/home/david/pi_planter
+ExecStart=/home/david/pi_planter/bin/python /home/david/pi_planter/main.py
+WantedBy=multi-user.target
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

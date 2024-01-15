@@ -1,0 +1,6 @@
+bin/
+adafruit_example.py
+lib/
+lib64
+pyvenv.cfg
+soil.py
