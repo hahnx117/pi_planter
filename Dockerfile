@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bookworm
+FROM python:3.11.2
 
 RUN apt update && apt install python3-dev gcc -y
 

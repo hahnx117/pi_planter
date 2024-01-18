@@ -11,6 +11,87 @@ import adafruit_ssd1306
 import logging
 import sys
 import datetime
+import statistics
+import json
+
+def calibrate_soil_sensor(calibrate=False, sensor_object=None):
+
+    default_min = 335
+    default_max = 515
+    measured_min = None
+    measured_max = None
+
+    if calibrate==True:
+
+        userinput = input("Please put the sensor in dry soil and press ENTER.")
+
+        if userinput is not None:
+            i = 0
+
+            reading_list = []
+
+            while i < 20:
+                print(sensor_object.moisture_read())
+                reading_list.append(sensor_object.moisture_read())
+
+
+                print(f"Current mean: {int(statistics.mean(reading_list))}\n")
+
+                i += 1
+                time.sleep(1)
+
+        else:
+            raise ValueError(f'Using default values of {default_min}, {default_max}')
+            return ((default_min, default_max))
+
+        measured_min = int(statistics.mean(reading_list))
+
+        print(f"Final Dry Mean: {int(measured_min)}")
+
+        userinput = input("Please wet down the soil and press ENTER.")
+
+        if userinput is not None:
+            i = 0
+
+            reading_list = []
+
+            while i < 20:
+                print(soil_sensor.moisture_read())
+                reading_list.append(soil_sensor.moisture_read())
+
+
+                print(f"Current mean: {int(statistics.mean(reading_list))}\n")
+
+                i += 1
+                time.sleep(1)
+
+        else:
+            raise ValueError(f'Using default values of {default_min}, {default_max}')
+            return ((default_min, default_max))
+
+        measured_max = int(statistics.mean(reading_list))
+
+
+        print(f"Final Wet Mean: {measured_max}")
+
+        return ((measured_min, measured_max))
+    else:
+        return (default_min, default_max)
+
+
+def compute_soil_moisture_percentage(MIN, MAX, average_reading):
+    """
+    Use min and max soil readings to create percentage.
+    currently based on static values.
+    :param MIN: MIN_SOIL_MOISTURE
+    :param MAX: MAX_SOIL_MOISTURE
+    :param reading: reading from the probe
+    """
+
+    numerator = average_reading - MIN
+    denomerator = MAX - MIN
+
+    return (float(numerator/denomerator)*100)
 
 ### Setup logging ###
 log = logging.getLogger()
@@ -32,7 +113,19 @@ HEIGHT = 64
 BORDER = 5
 
 DISPLAY_ADDRESS = 0x3D
-SENSOR_ADDRESS = 0x36
+SOIL_SENSOR_1_ADDRESS = 0x36
+SOIL_SENSOR_2_ADDRESS = 0x37
+
+DATA_FILE_ROOT = f"/home/david/pi_planter"
+
+### Load data object ###
+try:
+    with open(f'{DATA_FILE_ROOT}/data_dict.json') as f:
+        data_dict = json.load(f)
+        logging.info('data_dict loaded from file.')
+except FileNotFoundError:
+    logging.info('Creating data_dict')
+    data_dict = {}
 
 try:
     i2c = board.I2C()  # uses board.SCL and board.SDA
@@ -40,7 +133,14 @@ try:
 except Exception as e:
     logging.info(e)
 ### Configure soil sensor ###
-ss = Seesaw(i2c, addr=SENSOR_ADDRESS)
+soil_sensor_1 = Seesaw(i2c, addr=SOIL_SENSOR_1_ADDRESS)
+soil_sensor_2 = Seesaw(i2c, addr=SOIL_SENSOR_2_ADDRESS)
+
+### Calibrate sensor readings ###
+MIN_SOIL_MOISTURE, MAX_SOIL_MOISTURE = calibrate_soil_sensor(calibrate=False, sensor_object=soil_sensor_1)
+
+logging.info(f"MIN_SOIL_MOISTURE: {MIN_SOIL_MOISTURE}")
+logging.info(f"MAX_SOIL_MOISTURE: {MAX_SOIL_MOISTURE}")
 
 ### Run while loop ###
 while True:
@@ -57,17 +157,62 @@ while True:
     # Load default font.
     font = ImageFont.load_default(size=16)
 
-    text_string = f"Moisture: {ss.moisture_read()}\nTemp: {ss.get_temp():.1f}"
+    ## Get and log data
+    date_string = datetime.datetime.now().isoformat()
+    logging.info(f"date_string: {date_string}")
 
-    logging.info(f"ss.moisture_read: {ss.moisture_read()}")
-    logging.info(f"ss.get_temp: {ss.get_temp():.1f}")
+    data_dict[date_string] = {}
+    data_dict[date_string]['sensor1'] = {}
+    data_dict[date_string]['sensor2'] = {}
+    data_dict[date_string]['average'] = {}
+
+
+    soil_sensor_1_moisture = soil_sensor_1.moisture_read()
+    soil_sensor_2_moisture = soil_sensor_2.moisture_read()
+
+    data_dict[date_string]['sensor1']['moisture'] = soil_sensor_1_moisture
+    data_dict[date_string]['sensor2']['moisture'] = soil_sensor_2_moisture
+
+    soil_moisture_average = (soil_sensor_1_moisture + soil_sensor_2_moisture) / 2
+
+    data_dict[date_string]['average']['moisture'] = soil_moisture_average
+
+    soil_sensor_1_temp = soil_sensor_1.get_temp()
+    soil_sensor_2_temp = soil_sensor_2.get_temp()
+
+    data_dict[date_string]['sensor1']['temp'] = soil_sensor_1_temp
+    data_dict[date_string]['sensor2']['temp'] = soil_sensor_2_temp
+
+    soil_temp_average = (soil_sensor_1_temp + soil_sensor_2_temp) / 2
+
+    data_dict[date_string]['average']['temp'] = soil_temp_average
+
+    logging.info(f"soil_sensor_1.moisture_read: {soil_sensor_1_moisture}")
+    logging.info(f"soil_sensor_2.moisture_read: {soil_sensor_2_moisture}")
+    logging.info(f"soil_moisture_average: {soil_moisture_average}")
+
+    logging.info(f"soil_sensor_1.get_temp: {soil_sensor_1_temp:.1f}")
+    logging.info(f"soil_sensor_2.get_temp: {soil_sensor_2_temp:.1f}")
+    logging.info(f"soil_temp_average: {soil_temp_average}")
+
+
+    logging.info(f"Moisture Calculated Percentage: {compute_soil_moisture_percentage(MIN_SOIL_MOISTURE, MAX_SOIL_MOISTURE, soil_moisture_average):.1f}")
+
+    #text_string = f"Moisture%: {compute_soil_moisture_percentage(MIN_SOIL_MOISTURE, MAX_SOIL_MOISTURE, soil_moisture_average):.1f}\nTemp: {soil_temp_average:.1f}"
+    text_string = f"moisture_average: {soil_moisture_average}\ntemp_average: {soil_temp_average:.1f}C"
+
+    logging.info(text_string)
+
     # Draw Some Text
     (font_width, font_height) = font.getbbox(text_string)[2:]
 
-    #draw.multiline_text((oled.width // 2 - font_width // 2, oled.height // 2 - font_height // 2), text_string, font=font, fill=255, align="center")
-    draw.multiline_text((0,0), text_string, fill=255, align="center", font_size=18, spacing=16)
+    draw.multiline_text((0,0), text_string, fill=255, align="left", font_size=10, spacing=12)
 
     # Display image
     oled.image(image)
     oled.show()
-    time.sleep(3)
+
+    with open('data_dict.json', 'w') as f:
+        json.dump(data_dict, f)
+
+    time.sleep(15)
