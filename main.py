@@ -118,6 +118,8 @@ SOIL_SENSOR_2_ADDRESS = 0x37
 
 DATA_FILE_ROOT = f"/home/david/pi_planter"
 
+SLEEP_TIME = 60 # seconds
+
 ### Load data object ###
 try:
     with open(f'{DATA_FILE_ROOT}/data_dict.json') as f:
@@ -213,7 +215,7 @@ while True:
     #text_string = f"Moisture%: {compute_soil_moisture_percentage(MIN_SOIL_MOISTURE, MAX_SOIL_MOISTURE, soil_moisture_average):.1f}\nTemp: {soil_temp_average:.1f}"
     text_string = f"moisture_avg: {soil_moisture_average}\nmoisture_%: {compute_soil_moisture_percentage(MIN_SOIL_MOISTURE, MAX_SOIL_MOISTURE, soil_moisture_average):.1f}\n{date_string}"
 
-    logging.info(text_string)
+    #logging.info(text_string)
 
     # Draw Some Text
     (font_width, font_height) = font.getbbox(text_string)[2:]
@@ -235,4 +237,6 @@ while True:
     soil_sensor_2_temp = None
     soil_temp_average = None
 
-    time.sleep(10)
+    logging.info(f"Sleeping for {SLEEP_TIME} seconds.")
+
+    time.sleep(SLEEP_TIME)
