@@ -17,7 +17,7 @@ import json
 def calibrate_soil_sensor(calibrate=False, sensor_object=None):
 
     default_min = 335
-    default_max = 515
+    default_max = 1016
     measured_min = None
     measured_max = None
 
@@ -199,14 +199,14 @@ while True:
     logging.info(f"Moisture Calculated Percentage: {compute_soil_moisture_percentage(MIN_SOIL_MOISTURE, MAX_SOIL_MOISTURE, soil_moisture_average):.1f}")
 
     #text_string = f"Moisture%: {compute_soil_moisture_percentage(MIN_SOIL_MOISTURE, MAX_SOIL_MOISTURE, soil_moisture_average):.1f}\nTemp: {soil_temp_average:.1f}"
-    text_string = f"moisture_average: {soil_moisture_average}\ntemp_average: {soil_temp_average:.1f}C"
+    text_string = f"moisture_avg: {soil_moisture_average}\nmoisture_%: {compute_soil_moisture_percentage(MIN_SOIL_MOISTURE, MAX_SOIL_MOISTURE, soil_moisture_average):.1f}\n{date_string}"
 
     logging.info(text_string)
 
     # Draw Some Text
     (font_width, font_height) = font.getbbox(text_string)[2:]
 
-    draw.multiline_text((0,0), text_string, fill=255, align="left", font_size=10, spacing=12)
+    draw.multiline_text((0,0), text_string, fill=255, align="left", font_size=10, spacing=6)
 
     # Display image
     oled.image(image)
@@ -214,5 +214,13 @@ while True:
 
     with open('data_dict.json', 'w') as f:
         json.dump(data_dict, f)
+    
+    soil_sensor_1_moisture = None
+    soil_sensor_2_moisture = None
+    soil_moisture_average = None
+    
+    soil_sensor_1_temp = None
+    soil_sensor_2_temp = None
+    soil_temp_average = None
 
-    time.sleep(15)
+    time.sleep(10)
