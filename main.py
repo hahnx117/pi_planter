@@ -133,8 +133,20 @@ try:
 except Exception as e:
     logging.info(e)
 ### Configure soil sensor ###
-soil_sensor_1 = Seesaw(i2c, addr=SOIL_SENSOR_1_ADDRESS)
-soil_sensor_2 = Seesaw(i2c, addr=SOIL_SENSOR_2_ADDRESS)
+try:
+    soil_sensor_1 = Seesaw(i2c, addr=SOIL_SENSOR_1_ADDRESS)
+except ValueError:
+    print(f"No device at {hex(SOIL_SENSOR_1_ADDRESS)}. Make sure I2C is turned on in raspi-config.")
+    logging.error(f"No device found at {hex(SOIL_SENSOR_1_ADDRESS)}. Exiting.")
+    sys.exit()
+
+try:
+    soil_sensor_2 = Seesaw(i2c, addr=SOIL_SENSOR_2_ADDRESS)
+except ValueError:
+    print(f"No device at {hex(SOIL_SENSOR_2_ADDRESS)}. Make sure the AD0 jumper is soldered and try again.")
+    logging.error(f"No device found at {hex(SOIL_SENSOR_2_ADDRESS)}. Exiting.")
+    sys.exit()
+
 
 ### Calibrate sensor readings ###
 MIN_SOIL_MOISTURE, MAX_SOIL_MOISTURE = calibrate_soil_sensor(calibrate=False, sensor_object=soil_sensor_1)
