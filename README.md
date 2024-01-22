@@ -38,7 +38,7 @@ After that run `python main.py`. If the logging starts, it's good to go.
 
 ## Add the `systemd` service
 
-Make sure to update the `WorkingDirectory` and `ExecStart` variables in `pi_planter.service`. Then,
+Make sure to update the `WorkingDirectory` and `ExecStart` variables in `pi_planter.service`. Then, from the repo directory,
 
 ```
 sudo cp pi_planter.service /etc/systemd/system/pi_planter.service
